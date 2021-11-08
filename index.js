@@ -214,7 +214,7 @@ const tweetImages = (files, status) => {
     uploadMedia(file, function (mediaId) {
       mediaIds.push(mediaId);
       if (mediaIds.length === files.length) {
-        updateStatus(mediaIds, status);
+        updateStatus(mediaIds.reverse(), status);
       }
     });
   });
