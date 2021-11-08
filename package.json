@@ -1,0 +1,19 @@
+{
+  "name": "movie-pallette-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "canvas": "^2.8.0",
+    "colorthief": "^2.3.2",
+    "dotenv": "^10.0.0",
+    "node-fetch": "^3.0.0",
+    "nodemon": "^2.0.14",
+    "twit": "^2.2.11"
+  }
+}
