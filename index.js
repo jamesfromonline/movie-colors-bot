@@ -182,7 +182,7 @@ const updateStatus = (mediaIds, status) => {
           usedIds.push(movieId);
           fs.writeFileSync("movies.json", JSON.stringify({ ids: usedIds }));
           console.log("tweet sent");
-          process.exit(-1)
+          process.exit()
         }
       });
     } else {
