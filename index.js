@@ -17,26 +17,27 @@ const t = new Twit({
 
 // grab the latest movie ID from TMDB api
 const getLatestMovieId = async () => {
-    return new Promise(async (resolve, reject) => {
-        try {
-          const url = `
+  return new Promise(async (resolve, reject) => {
+    try {
+      const url = `
               https://api.themoviedb.org/3/movie/latest?api_key=${process.env.MOVIE_DB_KEY}&language=en-US`
-          const response = await fetch(url)
-          const data = await response.json()
-          resolve(data?.id)
-        } catch (e) {
-          console.log(e.message)
-          reject(e.message)
-          process.exit(0)
-        }
-    })
+      const response = await fetch(url)
+      const data = await response.json()
+      resolve(data?.id)
+    } catch (e) {
+      console.log(e.message)
+      reject(e.message)
+      process.exit(0)
+    }
+  })
 }
 
 // wait 1 second before retrying getRandomMovie()
-const sleep = (amt) => new Promise(resolve => setTimeout(resolve, amt))
+const sleep = (amt) => new Promise((resolve) => setTimeout(resolve, amt))
 
 // generate a random ID between 10 and the latest (won't always work since some IDs don't exist)
-const getRandomID = async () => Math.floor(Math.random() * (await getLatestMovieId() - 10) + 10)
+const getRandomID = async () =>
+  Math.floor(Math.random() * ((await getLatestMovieId()) - 10) + 10)
 
 // pul in the movies.json ids array (already used IDs)
 const usedIdsRaw = fs.readFileSync("movies.json")
@@ -47,60 +48,57 @@ let movieId
 
 // attempt to fetch a random movie. if the ID doesn't exist, there is no poster, or if it's an adult film, try again
 const getRandomMovie = async () => {
-    return new Promise(async (resolve, reject) => {
-        try {
-          const randomId = await getRandomID()
-          const url = `https://api.themoviedb.org/3/movie/${randomId}?api_key=${process.env.MOVIE_DB_KEY}&language=en-US`
-          const response = await fetch(url)
-          const data = await response.json()
-          if (data?.poster_path && data.adult === false) {
-              if (!usedIds.includes(data.id)) {
-                  movieId = data.id
-                  const info = {
-                      id: data.id,
-                      title: data.original_title,
-                      release: data.release_date.substr(0, 4),
-                      poster: `https://image.tmdb.org/t/p/original/${data.poster_path}`,
-                  }
-            
-                  resolve({ ...info })
-            } else {
-              console.log("ID used. Running again")
-              await getRandomMovie()
-              return
-            }
-          } else {
-              console.log('ID with poster not found')
-              await sleep(2000)
-              await getRandomMovie()
-              return
+  return new Promise(async (resolve, reject) => {
+    try {
+      const randomId = await getRandomID()
+      const url = `https://api.themoviedb.org/3/movie/${randomId}?api_key=${process.env.MOVIE_DB_KEY}&language=en-US`
+      const response = await fetch(url)
+      const data = await response.json()
+      if (data?.poster_path && data.adult === false) {
+        if (!usedIds.includes(data.id)) {
+          movieId = data.id
+          const info = {
+            id: data.id,
+            title: data.original_title,
+            release: data.release_date.substr(0, 4),
+            poster: `https://image.tmdb.org/t/p/original/${data.poster_path}`,
           }
-      
-        } catch (e) {
-          console.log(e.message)
-          reject(e.message)
-          process.exit(0)
+
+          resolve({ ...info })
+        } else {
+          console.log("ID used. Running again")
+          await getRandomMovie()
+          return
         }
-
-    })
+      } else {
+        console.log("ID with poster not found")
+        await sleep(2000)
+        await getRandomMovie()
+        return
+      }
+    } catch (e) {
+      console.log(e.message)
+      reject(e.message)
+      process.exit(0)
+    }
+  })
 }
-
 
 // return color palette array matrix (an array of arrays) from the movie poster
 const getColorPaletteFromImage = async () => {
-    try {
-        const movie = await getRandomMovie() || null
-        if (movie) {
-        const colorPalette = await ColorThief.getPalette(movie.poster, 8)
-        return {
-            ...movie,
-            palette: colorPalette,
-        }
-        }
-    } catch (e) {
-        console.log(e.message)
-        process.exit(0)
+  try {
+    const movie = (await getRandomMovie()) || null
+    if (movie) {
+      const colorPalette = await ColorThief.getPalette(movie.poster, 8)
+      return {
+        ...movie,
+        palette: colorPalette,
+      }
     }
+  } catch (e) {
+    console.log(e.message)
+    process.exit(0)
+  }
 }
 
 // draw the color palette data into a grid and save it as a png, also fetch save the poster image
@@ -109,7 +107,7 @@ const generateColorPaletteImage = async () => {
   const height = 1400
 
   try {
-    const movie = await getColorPaletteFromImage() || null
+    const movie = (await getColorPaletteFromImage()) || null
     if (movie) {
       const p = movie.palette
       const canvas = createCanvas(width, height)
@@ -213,9 +211,9 @@ const uploadMedia = (file, callback) => {
 
 const tweetImages = (files, status) => {
   let mediaIds = new Array()
-  files.forEach(file => {
+  files.forEach((file) => {
     setTimeout(() => {
-      uploadMedia(file, mediaId => {
+      uploadMedia(file, (mediaId) => {
         mediaIds.push(mediaId)
         if (mediaIds.length === files.length) {
           updateStatus(mediaIds, status)
@@ -228,7 +226,7 @@ const tweetImages = (files, status) => {
 // initializer
 const generateMovieColorPaletteTweet = async () => {
   try {
-    const data = await generateColorPaletteImage() || null
+    const data = (await generateColorPaletteImage()) || null
     if (data) {
       const files = ["poster.jpg", "palette.png"]
       const status = `${data.title} (${data.release})`
@@ -238,6 +236,5 @@ const generateMovieColorPaletteTweet = async () => {
     console.log(e.message)
   }
 }
-
 
 generateMovieColorPaletteTweet()
