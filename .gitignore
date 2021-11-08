@@ -3,3 +3,4 @@
 .env*
 nodemon.json
 package-lock.json
+.env
