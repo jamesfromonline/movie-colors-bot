@@ -21,7 +21,7 @@ const getColorPaletteFromImage = async (url) => {
     return colorPalette
   } catch (e) {
     console.log(e.message)
-    process.exit(0)
+    return
   }
 }
 
@@ -64,7 +64,7 @@ const generateColorPaletteImage = async (colors, id) => {
     }
   } catch (e) {
     console.log(e.message)
-    process.exit(0)
+    return
   }
 }
 
@@ -81,14 +81,16 @@ const updateStatus = (mediaIds, status) => {
       t.post("statuses/update", params, (err, data, response) => {
         if (err) {
           console.log(`Error occured updating status\t${err}`)
+          return
         } else {
           fs.unlinkSync(status.palettePath)
           console.log("tweet sent")
+          return
         }
       })
     } else {
       console.log(`Error creating metadata\t${err}`)
-      process.exit(0)
+      return
     }
   })
 }
@@ -104,7 +106,7 @@ const uploadMedia = (file, callback) => {
         callback(mediaId)
       } else {
         console.log(`Error occured uploading content\t${err}`)
-        process.exit(0)
+        return
       }
     }
   )
