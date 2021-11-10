@@ -176,13 +176,13 @@ const listenForHooks = async () => {
     await webhook.removeWebhooks()
 
     webhook.on("event", (event) => {
-      console.log(event)
       if (event?.tweet_create_events && event?.tweet_create_events[0]?.text === "@colorpaletteb0t") {
         const {
           in_reply_to_status_id_str,
           id_str,
           user: { id, screen_name },
         } = event.tweet_create_events[0]
+        console.log(`Called by @${screen_name}`)
         const params = {
           parentTweet: in_reply_to_status_id_str,
           callingTweetID: id_str,
