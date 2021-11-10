@@ -3,6 +3,7 @@ const ColorThief = require("colorthief")
 const { createCanvas } = require("canvas")
 const Twit = require("twit")
 const fs = require("fs")
+const port = process.env.PORT || 8080
 
 const t = new Twit({
   consumer_key: process.env.TWITTER_CONSUMER_KEY,
