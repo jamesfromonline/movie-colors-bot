@@ -3,163 +3,63 @@ const ColorThief = require("colorthief")
 const { createCanvas } = require("canvas")
 const Twit = require("twit")
 const fs = require("fs")
-const fetch = (...args) =>
-  import("node-fetch").then(({ default: fetch }) => fetch(...args))
 
 const t = new Twit({
   consumer_key: process.env.TWITTER_CONSUMER_KEY,
   consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
   access_token: process.env.TWITTER_ACCESS_TOKEN,
-  access_token_secret: process.env.TWITTER_ACCESS_SECRET,
+  access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
   timeout_ms: 60 * 1000,
   strictSSL: true,
 })
 
-// grab the latest movie ID from TMDB api
-const getLatestMovieId = async () => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const url = `
-              https://api.themoviedb.org/3/movie/latest?api_key=${process.env.MOVIE_DB_KEY}&language=en-US`
-      const response = await fetch(url)
-      const data = await response.json()
-      resolve(data?.id)
-    } catch (e) {
-      console.log(e.message)
-      reject(e.message)
-      process.exit(0)
-    }
-  })
-}
-
-// wait 1 second before retrying getRandomMovie()
-const sleep = (amt) => new Promise((resolve) => setTimeout(resolve, amt))
-
-// generate a random ID between 10 and the latest (won't always work since some IDs don't exist)
-const getRandomID = async () =>
-  Math.floor(Math.random() * ((await getLatestMovieId()) - 10) + 10)
-
-// pul in the movies.json ids array (already used IDs)
-const usedIdsRaw = fs.readFileSync("movies.json")
-const usedIdsJson = JSON.parse(usedIdsRaw)
-const usedIds = usedIdsJson.ids
-
-let movieId
-
-// attempt to fetch a random movie. if the ID doesn't exist, there is no poster, or if it's an adult film, try again
-const getRandomMovie = async () => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const randomId = await getRandomID()
-      const url = `https://api.themoviedb.org/3/movie/${randomId}?api_key=${process.env.MOVIE_DB_KEY}&language=en-US`
-      const response = await fetch(url)
-      const data = await response.json()
-      if (data?.poster_path && data.adult === false) {
-        if (!usedIds.includes(data.id)) {
-          movieId = data.id
-          const info = {
-            id: data.id,
-            title: data.original_title,
-            release: data.release_date.substr(0, 4),
-            poster: `https://image.tmdb.org/t/p/original/${data.poster_path}`,
-          }
-
-          resolve({ ...info })
-        } else {
-          console.log("ID used. Running again")
-          await getRandomMovie()
-          return
-        }
-      } else {
-        console.log("ID with poster not found")
-        await sleep(2000)
-        await getRandomMovie()
-        return
-      }
-    } catch (e) {
-      console.log(e.message)
-      reject(e.message)
-      process.exit(0)
-    }
-  })
-}
-
-// return color palette array matrix (an array of arrays) from the movie poster
-const getColorPaletteFromImage = async () => {
+// // return color palette array from the movie poster
+const getColorPaletteFromImage = async (url) => {
   try {
-    const movie = (await getRandomMovie()) || null
-    if (movie) {
-      const colorPalette = await ColorThief.getPalette(movie.poster, 8)
-      return {
-        ...movie,
-        palette: colorPalette,
-      }
-    }
+    const colorPalette = await ColorThief.getPalette(url, 8)
+    return colorPalette
   } catch (e) {
     console.log(e.message)
     process.exit(0)
   }
 }
 
-// draw the color palette data into a grid and save it as a png, also fetch save the poster image
-const generateColorPaletteImage = async () => {
+// // draw the color palette data into a grid and save it as a png, also fetch save the poster image
+const generateColorPaletteImage = async (colors, id) => {
   const width = 1600
-  const height = 1400
+  const height = 900
 
   try {
-    const movie = (await getColorPaletteFromImage()) || null
-    if (movie) {
-      const p = movie.palette
+    // const movie = (await getColorPaletteFromImage()) || null
+    if (colors) {
+      const p = colors
       const canvas = createCanvas(width, height)
       const ctx = canvas.getContext("2d")
 
       const c1 = p[0]
       ctx.fillStyle = `rgb(${c1[0]}, ${c1[1]}, ${c1[2]})`
-      ctx.fillRect(0, 0, 800, 350)
+      ctx.fillRect(0, 0, 320, 900)
 
       const c2 = p[1]
       ctx.fillStyle = `rgb(${c2[0]}, ${c2[1]}, ${c2[2]})`
-      ctx.fillRect(800, 0, 800, 350)
+      ctx.fillRect(320, 0, 320, 900)
 
       const c3 = p[2]
       ctx.fillStyle = `rgb(${c3[0]}, ${c3[1]}, ${c3[2]})`
-      ctx.fillRect(0, 350, 800, 350)
+      ctx.fillRect(640, 0, 320, 900)
 
       const c4 = p[3]
       ctx.fillStyle = `rgb(${c4[0]}, ${c4[1]}, ${c4[2]})`
-      ctx.fillRect(800, 350, 800, 350)
+      ctx.fillRect(960, 0, 320, 900)
 
       const c5 = p[4]
       ctx.fillStyle = `rgb(${c5[0]}, ${c5[1]}, ${c5[2]})`
-      ctx.fillRect(0, 700, 800, 350)
-
-      const c6 = p[5]
-      ctx.fillStyle = `rgb(${c6[0]}, ${c6[1]}, ${c6[2]})`
-      ctx.fillRect(800, 700, 800, 350)
-
-      const c7 = p[6]
-      ctx.fillStyle = `rgb(${c7[0]}, ${c7[1]}, ${c7[2]})`
-      ctx.fillRect(0, 1050, 800, 350)
-
-      const c8 = p[7]
-      ctx.fillStyle = `rgb(${c8[0]}, ${c8[1]}, ${c8[2]})`
-      ctx.fillRect(800, 1050, 800, 350)
+      ctx.fillRect(1280, 0, 320, 900)
 
       const buffer = canvas.toBuffer("image/png")
-      fs.writeFileSync(`./palette.png`, buffer)
+      fs.writeFileSync(`./palette-${id}.png`, buffer)
 
-      const posterResponse = await fetch(movie.poster)
-      const posterBuffer = await posterResponse.buffer()
-      fs.writeFileSync(`./poster.jpg`, posterBuffer)
-
-      const result = {
-        ...movie,
-        palettePath: `./palette.png`,
-        posterPath: `./poster.png`,
-      }
-
-      delete result?.palette
-      return { ...result }
+      return `./palette-${id}.png`
     }
   } catch (e) {
     console.log(e.message)
@@ -167,22 +67,22 @@ const generateColorPaletteImage = async () => {
   }
 }
 
-// adds media ID to status before posting
+// // adds media ID to status before posting
 const updateStatus = (mediaIds, status) => {
   let meta_params = { media_id: mediaIds[0] }
   t.post("media/metadata/create", meta_params, (err, data, response) => {
     if (!err) {
-      let params = { status: status, media_ids: mediaIds }
+      let params = {
+        status: status.status,
+        in_reply_to_status_id: status.in_reply_to_status_id,
+        media_ids: mediaIds,
+      }
       t.post("statuses/update", params, (err, data, response) => {
         if (err) {
           console.log(`Error occured updating status\t${err}`)
         } else {
-          fs.unlinkSync(`./poster.jpg`)
-          fs.unlinkSync(`./palette.png`)
-          usedIds.push(movieId)
-          fs.writeFileSync("movies.json", JSON.stringify({ ids: usedIds }))
+          fs.unlinkSync(status.palettePath)
           console.log("tweet sent")
-          process.exit(0)
         }
       })
     } else {
@@ -192,7 +92,7 @@ const updateStatus = (mediaIds, status) => {
   })
 }
 
-// send the media metadata endpoint the images
+// // send the media metadata endpoint the images
 const uploadMedia = (file, callback) => {
   t.post(
     "media/upload",
@@ -209,32 +109,98 @@ const uploadMedia = (file, callback) => {
   )
 }
 
-const tweetImages = (files, status) => {
+const tweetImages = (files, response) => {
   let mediaIds = new Array()
   files.forEach((file) => {
     setTimeout(() => {
       uploadMedia(file, (mediaId) => {
         mediaIds.push(mediaId)
         if (mediaIds.length === files.length) {
-          updateStatus(mediaIds, status)
+          updateStatus(mediaIds, response)
         }
       })
     }, 1000)
   })
 }
 
-// initializer
-const generateMovieColorPaletteTweet = async () => {
+const handleColorPaletteCreationEvent = async (input) => {
+  const { parentTweet, callingTweetID, username } = input
   try {
-    const data = (await generateColorPaletteImage()) || null
-    if (data) {
-      const files = ["poster.jpg", "palette.png"]
-      const status = `${data.title} (${data.release})`
-      tweetImages(files, status)
-    }
+    t.get(
+      "statuses/show/:id",
+      { id: parentTweet.toString() },
+      async (err, data, res) => {
+        if (!err) {
+          const {
+            entities: { media },
+          } = data
+          if (media.length > 0) {
+            const mediaUrl = media[0].media_url_https
+            const colors = await getColorPaletteFromImage(mediaUrl)
+            const colorPalettePath = await generateColorPaletteImage(
+              colors,
+              media[0].id_str
+            )
+            const response = {
+              status: `@${username}`,
+              in_reply_to_status_id: callingTweetID,
+              palettePath: colorPalettePath,
+            }
+            tweetImages([colorPalettePath], response)
+
+          } else {
+            // handle no media response
+          }
+        }
+      }
+    )
   } catch (e) {
     console.log(e.message)
   }
 }
 
-generateMovieColorPaletteTweet()
+const { Autohook } = require("twitter-autohook")
+
+const listenForHooks = async () => {
+  try {
+    const webhook = new Autohook({
+      token: process.env.TWITTER_ACCESS_TOKEN,
+      token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
+      consumer_key: process.env.TWITTER_CONSUMER_KEY,
+      consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+      env: process.env.TWITTER_WEBHOOK_ENV,
+      port: 5555,
+    })
+
+    // Removes existing webhooks
+    await webhook.removeWebhooks()
+
+    webhook.on("event", (event) => {
+      if (event?.tweet_create_events && event?.tweet_create_events[0]?.text === "@colorpaletteb0t") {
+        const {
+          in_reply_to_status_id_str,
+          id_str,
+          user: { id, screen_name },
+        } = event.tweet_create_events[0]
+        const params = {
+          parentTweet: in_reply_to_status_id_str,
+          callingTweetID: id_str,
+          username: screen_name,
+        }
+        handleColorPaletteCreationEvent(params)
+      }
+    })
+
+    await webhook.start()
+
+    await webhook.subscribe({
+      oauth_token: process.env.TWITTER_ACCESS_TOKEN,
+      oauth_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
+    })
+  } catch (e) {
+    console.error(e.message)
+    process.exit(1)
+  }
+}
+
+listenForHooks()

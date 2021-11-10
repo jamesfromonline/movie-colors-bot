@@ -13,6 +13,7 @@
     "colorthief": "^2.3.2",
     "dotenv": "^10.0.0",
     "node-fetch": "^3.0.0",
-    "twit": "^2.2.11"
+    "twit": "^2.2.11",
+    "twitter-autohook": "^1.7.2"
   }
 }
