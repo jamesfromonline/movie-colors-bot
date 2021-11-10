@@ -152,6 +152,8 @@ const handleColorPaletteCreationEvent = async (input) => {
           } else {
             console.log('tagged in post with no media')
           }
+        } else {
+          console.log(err)
         }
       }
     )
@@ -177,8 +179,8 @@ const listenForHooks = async () => {
     await webhook.removeWebhooks()
 
     webhook.on("event", (event) => {
-      console.log(`Called`)
       if (event?.tweet_create_events && event?.tweet_create_events[0]?.text === "@colorpaletteb0t") {
+        console.log(`Called`)
         const {
           in_reply_to_status_id_str,
           id_str,
